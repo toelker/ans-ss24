@@ -18,6 +18,15 @@
 
 from mininet.topo import Topo
 
+class SingleSwitchTopo(Topo):
+    "Single Switch Topology"
+    def build(self, count=1):
+        hosts = [self.addHost('h%d' % i)
+        for i in range(1, count + 1)]
+        s1 = self.addSwitch('s1')
+        for h in hosts:
+        self.addLink(h, s1)
+
 class BridgeTopo(Topo):
     "Creat a bridge-like customized network topology according to Figure 1 in the lab0 description."
 
@@ -26,5 +35,22 @@ class BridgeTopo(Topo):
         Topo.__init__(self)
 
         # TODO: add nodes and links to construct the topology; remember to specify the link properties
+
+        # Add nodes
+        h1 = self.addHost('h1')
+        h2 = self.addHost('h2')
+        s1 = self.addSwitch('s1')
+        c1 = self.addController('c1')
+        # Add links
+        self.addLink(h1, s1)
+        self.addLink(h2, s1)
+        # Opeartions
+        self.start()
+        CLI(net)
+        net.stop()
+        # Performance modeling
+        net = Mininet(link=TCLink, host=cpuLimitedHost)
+        net.addLink(h2, s1, bw=10, delay='50ms')
+        net.addHost('h1', cpu=.2)
 
 topos = {'bridge': (lambda: BridgeTopo())}

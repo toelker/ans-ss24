@@ -30,6 +30,24 @@ class NetworkTopo(Topo):
 
         Topo.__init__(self)
 
+        h1 = self.addHost(name="h1", ip="10.0.1.2/24")
+        h2 = self.addHost(name="h2", ip="10.0.1.2/24")
+        ser = self.addHost(name="ser", ip="10.0.2.2/24")
+        ext = self.addHost(name="ext", ip="192.168.1.123/24")
+
+        s1 = self.addSwitch("s1")
+        s2 = self.addSwitch("s2")
+        s3 = self.addHost("s3") #Router
+
+        #c1 = self.addController("c1", ip="127.0.0.1", port=6633)
+                   
+        self.addLink(h1, s1)    #Host1, Switch1
+        self.addLink(h2, s1)    #Host2, Switch1
+        self.addLink(s1, s3)    #Switch1, Router
+        self.addLink(s3, s2)    #Router, Switch2
+        self.addLink(s2, ser)   #Switch2, Data center server
+        self.addLink(s3, ext)   #Router, Internet Host
+
         # Build the specified network topology here
 
 def run():
