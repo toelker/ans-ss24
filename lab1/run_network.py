@@ -23,7 +23,6 @@ from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.log import setLogLevel
 from ans_controller import LearningSwitch
-from ryu.lib import hub
 
 
 class NetworkTopo(Topo):
