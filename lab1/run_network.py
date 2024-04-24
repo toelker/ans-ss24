@@ -22,6 +22,8 @@ from mininet.node import RemoteController, OVSKernelSwitch
 from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.log import setLogLevel
+from ans_controller import LearningSwitch
+from ryu.lib import hub
 
 
 class NetworkTopo(Topo):
@@ -37,16 +39,14 @@ class NetworkTopo(Topo):
 
         s1 = self.addSwitch("s1")
         s2 = self.addSwitch("s2")
-        s3 = self.addHost("s3") #Router
-
-        #c1 = self.addController("c1", ip="127.0.0.1", port=6633)
+        s3 = self.addSwitch("s3") #Router
                    
-        self.addLink(h1, s1)    #Host1, Switch1
-        self.addLink(h2, s1)    #Host2, Switch1
-        self.addLink(s1, s3)    #Switch1, Router
-        self.addLink(s3, s2)    #Router, Switch2
-        self.addLink(s2, ser)   #Switch2, Data center server
-        self.addLink(s3, ext)   #Router, Internet Host
+        self.addLink(h1, s1, bw=15, delay='10ms')    #Host1, Switch1
+        self.addLink(h2, s1, bw=15, delay='10ms')    #Host2, Switch1
+        self.addLink(s1, s3, bw=15, delay='10ms')    #Switch1, Router
+        self.addLink(s3, s2, bw=15, delay='10ms')    #Router, Switch2
+        self.addLink(s2, ser, bw=15, delay='10ms')   #Switch2, Data center server
+        self.addLink(s3, ext, bw=15, delay='10ms')   #Router, Internet Host
 
         # Build the specified network topology here
 
