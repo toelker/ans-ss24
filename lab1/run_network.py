@@ -33,7 +33,7 @@ class NetworkTopo(Topo):
         h1 = self.addHost(name="h1", ip="10.0.1.2/24", defaultRoute="via 10.0.1.1")
         h2 = self.addHost(name="h2", ip="10.0.1.2/24", defaultRoute="via 10.0.1.1")
         ser = self.addHost(name="ser", ip="10.0.2.2/24", defaultRoute="via 10.0.2.1")
-        ext = self.addHost(name="ext", ip="192.168.1.123/24", defaultRoute="via 192.168.1.1")
+        ext = self.addHost(name="ext", intf="ext_eth0", ip="192.168.1.123/24", defaultRoute="via 192.168.1.1")
 
         s1 = self.addSwitch("s1", inft="s1_eth1")
         s2 = self.addSwitch("s2", intf="s2_eth2")
@@ -42,9 +42,9 @@ class NetworkTopo(Topo):
         self.addLink(h1, s1, bw=15, delay='10ms')    #Host1, Switch1
         self.addLink(h2, s1, bw=15, delay='10ms')    #Host2, Switch1
 
-        self.addLink(node1=s3, node2=s1, bw=15, delay='10ms', intf1="s3_eth1", params1={"ip":"10.0.1.1/24"})    #Switch1, Router
-        self.addLink(s3, s2, bw=15, delay='10ms', intf1="s3_eth2", params1={"ip":"10.0.2.1/24"})    #Router, Switch2
-        self.addLink(s3, ext, bw=15, delay='10ms', intf1="s3_eth3", params1={"ip":"192.168.1.1/24"})   #Router, Internet Host
+        self.addLink(node1=s3, node2=s1, bw=15, delay='10ms', intf1="s3_eth1", intf2="s1_eth1", params1={"ip":"10.0.1.1/24"})    #Switch1, Router
+        self.addLink(s3, s2, bw=15, delay='10ms', intf1="s3_eth2", intf2="s2_eth2", params1={"ip":"10.0.2.1/24"})    #Router, Switch2
+        self.addLink(s3, ext, bw=15, delay='10ms', intf1="s3_eth3", intf2="ext_eth0", params1={"ip":"192.168.1.1/24"})   #Router, Internet Host
 
         self.addLink(s2, ser, bw=15, delay='10ms')  # Switch2, Data center server
 
@@ -61,9 +61,9 @@ def run():
         controller=RemoteController,
         ip="127.0.0.1",
         port=6653)
-    net.get("s3").setMAC("00:00:00:00:01:01")  #setmac
-    #net.get("s3").setmac("00:00:00:00:01:02")  # setmac
-    #net.get("s3").setmac("00:00:00:00:01:03")  # setmac
+    net.get("s3").intf("s3-eth1").setMAC("00:00:00:00:01:01")
+    net.get("s3").intf("s3-eth2").setMAC("00:00:00:00:01:02")  # setmac
+    net.get("s3").intf("s3-eth3").setMAC("00:00:00:00:01:03")  # setmac
 
     net.start()
     CLI(net)
