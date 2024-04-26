@@ -19,6 +19,7 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
+from ipaddress import IPv4Address
 
 
 class LearningSwitch(app_manager.RyuApp):
@@ -27,9 +28,11 @@ class LearningSwitch(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(LearningSwitch, self).__init__(*args, **kwargs)
 
-        # Here you can initialize the data structures you want to keep at the controller
-        
+        self.mac_to_port = {}
 
+        # Here you can initialize the data structures you want to keep at the controller
+
+    
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         
@@ -57,8 +60,20 @@ class LearningSwitch(app_manager.RyuApp):
     # Handle the packet_in event
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
-        
+
         msg = ev.msg
         datapath = msg.datapath
+        ofproto = msg.datapath.ofproto
+        parser = msg.datapath.ofproto_parser
+        print("Switch ID: ", ofproto, parser)
 
+        #dpid = msg.datapath.id
+        #pkt = packet.Packet(msg.data)
+        in_port = msg.match['in_port']
+        data = msg.data if msg.buffer_id == ofproto.OFP_NO_BUFFER else None
+        actions = [datapath.ofproto_parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
+        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions, data=data)
+        self.logger.info("Sending packet out")
+        #print(out)
+        datapath.send_msg(out)
         # Your controller implementation should start here

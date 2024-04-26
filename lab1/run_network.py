@@ -22,7 +22,6 @@ from mininet.node import RemoteController, OVSKernelSwitch
 from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.log import setLogLevel
-from ans_controller import LearningSwitch
 
 
 class NetworkTopo(Topo):
@@ -31,21 +30,23 @@ class NetworkTopo(Topo):
 
         Topo.__init__(self)
 
-        h1 = self.addHost(name="h1", ip="10.0.1.2/24")
-        h2 = self.addHost(name="h2", ip="10.0.1.2/24")
-        ser = self.addHost(name="ser", ip="10.0.2.2/24")
-        ext = self.addHost(name="ext", ip="192.168.1.123/24")
+        h1 = self.addHost(name="h1", ip="10.0.1.2/24", defaultRoute="via 10.0.1.1")
+        h2 = self.addHost(name="h2", ip="10.0.1.2/24", defaultRoute="via 10.0.1.1")
+        ser = self.addHost(name="ser", ip="10.0.2.2/24", defaultRoute="via 10.0.2.1")
+        ext = self.addHost(name="ext", ip="192.168.1.123/24", defaultRoute="via 192.168.1.1")
 
-        s1 = self.addSwitch("s1")
-        s2 = self.addSwitch("s2")
-        s3 = self.addSwitch("s3") #Router
+        s1 = self.addSwitch("s1", inft="s1_eth1")
+        s2 = self.addSwitch("s2", intf="s2_eth2")
+        s3 = self.addSwitch("s3", intf="s3_eth0") #Router
                    
         self.addLink(h1, s1, bw=15, delay='10ms')    #Host1, Switch1
         self.addLink(h2, s1, bw=15, delay='10ms')    #Host2, Switch1
-        self.addLink(s1, s3, bw=15, delay='10ms')    #Switch1, Router
-        self.addLink(s3, s2, bw=15, delay='10ms')    #Router, Switch2
-        self.addLink(s2, ser, bw=15, delay='10ms')   #Switch2, Data center server
-        self.addLink(s3, ext, bw=15, delay='10ms')   #Router, Internet Host
+
+        self.addLink(node1=s3, node2=s1, bw=15, delay='10ms', intf1="s3_eth1", params1={"ip":"10.0.1.1/24"})    #Switch1, Router
+        self.addLink(s3, s2, bw=15, delay='10ms', intf1="s3_eth2", params1={"ip":"10.0.2.1/24"})    #Router, Switch2
+        self.addLink(s3, ext, bw=15, delay='10ms', intf1="s3_eth3", params1={"ip":"192.168.1.1/24"})   #Router, Internet Host
+
+        self.addLink(s2, ser, bw=15, delay='10ms')  # Switch2, Data center server
 
         # Build the specified network topology here
 
@@ -56,10 +57,14 @@ def run():
                   link=TCLink,
                   controller=None)
     net.addController(
-        'c1', 
-        controller=RemoteController, 
-        ip="127.0.0.1", 
+        'c1',
+        controller=RemoteController,
+        ip="127.0.0.1",
         port=6653)
+    net.get("s3").setMAC("00:00:00:00:01:01")  #setmac
+    #net.get("s3").setmac("00:00:00:00:01:02")  # setmac
+    #net.get("s3").setmac("00:00:00:00:01:03")  # setmac
+
     net.start()
     CLI(net)
     net.stop()
