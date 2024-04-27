@@ -18,6 +18,7 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
+from ryu.lib.packet import ethernet, packet, ipv6
 from ryu.ofproto import ofproto_v1_3
 from ipaddress import IPv4Address
 
@@ -46,6 +47,10 @@ class LearningSwitch(app_manager.RyuApp):
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
 
+        self.mac_to_port[datapath.id] = {}
+
+        print("Switch connected: ", datapath.id)
+
     # Add a flow entry to the flow-table
     def add_flow(self, datapath, priority, match, actions):
         ofproto = datapath.ofproto
@@ -60,20 +65,44 @@ class LearningSwitch(app_manager.RyuApp):
     # Handle the packet_in event
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
+        msg = ev.msg    #openflow message between controller and switch
+        datapath = msg.datapath #datapath of openflow message
+        ofproto = msg.datapath.ofproto  #Openflow protocol for the switch
+        parser = msg.datapath.ofproto_parser    # Parser for the openflow protocol message
+        in_port = msg.match['in_port']  # input port from the packet message
+        pkt = packet.Packet(msg.data)   #parse packet data from openflow message
+        eth = pkt.get_protocol(ethernet.ethernet)   #ethernet protocol header
 
-        msg = ev.msg
-        datapath = msg.datapath
-        ofproto = msg.datapath.ofproto
-        parser = msg.datapath.ofproto_parser
-        print("Switch ID: ", ofproto, parser)
+        # Drop IPv6 packets (we use only ipv4 packages)
+        if pkt.get_protocol(ipv6.ipv6):
+            match = parser.OFPMatch(eth_type=eth.ethertype)
+            actions = []
+            self.add_flow(datapath, 1, match, actions)
+            print("Dropped IPv6 Packet")
+            return
 
-        #dpid = msg.datapath.id
-        #pkt = packet.Packet(msg.data)
-        in_port = msg.match['in_port']
-        data = msg.data if msg.buffer_id == ofproto.OFP_NO_BUFFER else None
-        actions = [datapath.ofproto_parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
-        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions, data=data)
-        self.logger.info("Sending packet out")
-        #print(out)
+        src_mac = eth.src   #source MAC
+        dst_mac = eth.dst   #Destination MAC
+
+        print("Source: ", src_mac)
+        print("Destination: ", dst_mac)
+
+        self.mac_to_port[datapath.id][src_mac] = in_port
+
+
+        print("Got Packages")
+        print("")
+        self.package_flooding(datapath, msg, in_port)
+
+
+    def package_flooding(self, datapath, msg, in_port):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        actions = [parser.OFPActionOutput(port) for port in self.mac_to_port[datapath.id].values()
+                   if port != in_port]
+        data = None
+        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+            data = msg.data
+        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
+                                  in_port=in_port, actions=actions, data=data)
         datapath.send_msg(out)
-        # Your controller implementation should start here

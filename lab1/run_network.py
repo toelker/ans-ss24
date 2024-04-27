@@ -35,7 +35,7 @@ class NetworkTopo(Topo):
         ser = self.addHost(name="ser", ip="10.0.2.2/24", defaultRoute="via 10.0.2.1")
         ext = self.addHost(name="ext", intf="ext_eth0", ip="192.168.1.123/24", defaultRoute="via 192.168.1.1")
 
-        s1 = self.addSwitch("s1", inft="s1_eth1")
+        s1 = self.addSwitch("s1", intf="s1_eth1")
         s2 = self.addSwitch("s2", intf="s2_eth2")
         s3 = self.addSwitch("s3", intf="s3_eth0") #Router
                    
